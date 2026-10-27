@@ -5,6 +5,9 @@ on:
     - cron: '*/30 * * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write  # Permet au bot de sauvegarder les modifications de portefeuille
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
@@ -20,7 +23,7 @@ jobs:
       - name: Installer les bibliothèques
         run: |
           pip install --upgrade pip
-          pip install requests yfinance
+          pip install requests feedparser pandas yfinance
 
       - name: Lancer le script de Trading
         env:
@@ -28,3 +31,11 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: |
           python bot_trading.py
+
+      - name: Sauvegarder l'état du portefeuille sur GitHub
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.io"
+          git add etat.json
+          git commit -m "Mise à jour automatique de l'état du portefeuille [skip ci]" || echo "Aucun changement à commiter"
+          git push
