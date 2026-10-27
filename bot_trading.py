@@ -14,6 +14,13 @@ def send_telegram_alert(message):
     }
     requests.post(url, json=payload)
 
+# 💼 VOS POSITIONS ACTUELLES (Modifiez ici selon ce que vous avez acheté)
+# Format : "TICKER": {"quantite": nombre, "prix_achat": prix_moyen}
+MON_PORTEFEUILLE = {
+    "NVDA": {"quantite": 1, "prix_achat": 115.00},    # Exemple : 1 action NVIDIA achetée à 115$
+    "BTC-USD": {"quantite": 0.005, "prix_achat": 62000.00} # Exemple de crypto
+}
+
 # Liste des actifs à surveiller (Actions, Cryptos, Forex)
 ACTIFS = {
     "NVIDIA (Action)": "NVDA",
@@ -33,32 +40,41 @@ def analyser_marche():
                 
             prix_actuel = hist['Close'].iloc[-1]
             prix_precedent = hist['Close'].iloc[-2]
-            
-            # Calcul de la variation en pourcentage sur 24h / dernière bougie
             variation = ((prix_actuel - prix_precedent) / prix_precedent) * 100
             
-            # Logique de signal simple basée sur le momentum
+            # Gestion du portefeuille
+            statut_portefeuille = "❌ Vous ne possédez pas cet actif"
+            if ticker in MON_PORTEFEUILLE:
+                pos = MON_PORTEFEUILLE[ticker]
+                qte = pos["quantite"]
+                p_achat = pos["prix_achat"]
+                valeur_actuelle = qte * prix_actuel
+                valeur_achat = qte * p_achat
+                gain_perte = valeur_actuelle - valeur_achat
+                gain_perte_pct = ((prix_actuel - p_achat) / p_achat) * 100
+                
+                emoji_gp = "🟢" if gain_perte >= 0 else "🔴"
+                statut_portefeuille = (
+                    f"✅ **En portefeuille :** {qte} unité(s)\n"
+                    f"💰 **Valeur :** ${valeur_actuelle:.2f}\n"
+                    f"📊 **Performance :** {emoji_gp} {gain_perte_pct:+.2f}% (${gain_perte:+.2f})"
+                )
+
+            # Signal technique
             if variation > 1.5:
-                signal = "🟢 ACHETER (Forte impulsion haussière)"
-                stop_loss = prix_actuel * 0.97
-                take_profit = prix_actuel * 1.05
+                signal = "🟢 ACHETER / RENFORCER"
             elif variation < -1.5:
-                signal = "🔴 VENDRE / ÉVITER (Tendance baissière)"
-                stop_loss = prix_actuel * 1.03
-                take_profit = prix_actuel * 0.95
+                signal = "🔴 VENDRE / PRUDENCE"
             else:
-                signal = "🟡 SURVEILLER (Marché neutre / Consolidation)"
-                stop_loss = prix_actuel * 0.98
-                take_profit = prix_actuel * 1.02
+                signal = "🟡 SURVEILLER"
 
             message = f"""
-📊 **ANALYSE TEMPS RÉEL : {nom}**
+📊 **ANALYSE : {nom}**
 
-💵 **Prix :** ${prix_actuel:.2f}
-📈 **Variation :** {variation:+.2f}%
-💡 **Signal :** {signal}
-🛑 **Stop Loss :** ${stop_loss:.2f}
-🎯 **Take Profit :** ${take_profit:.2f}
+💵 **Prix direct :** ${prix_actuel:.2f} ({variation:+.2f}%)
+💡 **Signal Bot :** {signal}
+
+{statut_portefeuille}
 """
             send_telegram_alert(message)
             
