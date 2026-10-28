@@ -1,5 +1,8 @@
 {
- "cooldown": {},
+ "cooldown": {
+  "Microsoft_actus": "2026-10-28T15:47:22.451582+00:00",
+  "XRP_actus": "2026-10-28T15:47:49.346440+00:00"
+ },
  "positions": {},
  "pending": {},
  "cash": 100.0,
